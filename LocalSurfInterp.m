@@ -39,6 +39,7 @@ function [U, V, P] = LocalSurfInterp (n, m, Q)
     s(k+1) = 0:
     for l = 1:m
       %% TODO: Compute and load T^v_{k,l} into td(k+1, l+1, 1+1)
+      td(k+1, l+1, 1+1) = ComputeTvkl (k, l);
       d = norm (Q(k+1, l+1, :) - Q(k+1, l, :), 2);
       vb(l+1) = vb(k+1) + d;
       s(k+1)  = s(k+1)  + d;      
