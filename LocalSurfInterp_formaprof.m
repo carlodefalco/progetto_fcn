@@ -1,4 +1,4 @@
-function [U, V, P] = LocalSurfInterp (n, m, Q)
+function [U, V, P,td] = LocalSurfInterp (n, m, Q)
 
 %%LocalSurfInterp
 %% Local Surface interpolation
@@ -13,11 +13,6 @@ ub = zeros (n+1, 1);
 td = zeros (n+1, m+1, 3);
 Vk = zeros(n+1,m+1);
 Vv =zeros(n+1,m+1);
-delta_uk = zeros(1,n);
-delta_vl = zeros(1,m);
-alpha_k = zeros(1,n-1);
-beta_l = zeros(1,m-1);
-d_vu = zeros(n-1,m-1);
 
 for l = 0:m
     %% TODO: Compute and load T^u_{0,l} into td(0+1, l+1, 0+1)
