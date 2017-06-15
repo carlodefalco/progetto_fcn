@@ -11,8 +11,6 @@ function [U, V, P] = LocalSurfInterp (n, m, Q)
 total = 0;
 ub = zeros (n+1, 1);
 td = zeros (n+1, m+1, 3);
-Vk = zeros(n+1,m+1);
-Vv =zeros(n+1,m+1);
 
 for l = 0:m
     %% TODO: Compute and load T^u_{0,l} into td(0+1, l+1, 0+1)
@@ -22,7 +20,7 @@ for l = 0:m
     for k = 1:n
         %% TODO: Compute and load T^u_{k,l} into td(k+1, l+1, 0+1)
         Tukl=ComputeTukl(k,l);
-        td(k+1, l+1, 0+1) = Tukl(k,l+1);
+        td(k+1, l+1, 0+1) = Tukl(k+1,l+1);
         d = norm (Q(k+1, l+1, :) - Q(k, l+1, :), 2);
         ub(k+1) = ub(k+1) + d;
         r(l+1)  = r(l+1)  + d;
@@ -32,10 +30,9 @@ end
 
 for k=1:n
     ub(k+1) = ub(k) + ub(k+1) / total ;
-    ub(n+1) = 1;
-    ub(isnan(ub))=0;
+    ub(isnan(ub)) = 0;
 end
-
+ub(n+1) = 1;
 %% get vb, s and v direction tangents
 total = 0;
 vb = zeros (m+1, 1);
@@ -58,8 +55,8 @@ end
 
 for l=1:m
     vb(l+1) = vb(l) + vb(l+1) / total ;
-    vb(m+1) = 1;
 end
+vb(m+1) = 1;
 
 %% TODO: Load the U knot vector
 %%       Load the V knot vector
@@ -67,11 +64,15 @@ end
 
 
 
+
+
 %% TODO: Compute the D^{uv}_{k,l} by eq. (9.59) and load into td(k+1, l+1, 2+1)
+
 for k=0:n
     for l=0:m
-Duvkl = ComputeDuvkl (k, l);
-td(k+1, l+1, 2+1) = Duvkl(k+1,l+1) ;
+        
+        Duvkl = ComputeDuvkl (k, l);
+        td(k+1, l+1, 2+1) = Duvkl(k+1,l+1) ;
     end
 end
 
@@ -90,6 +91,7 @@ for k=0:n
     for i=0:m-1
         
         a=r(k+1)*delta_uk(i+1)/3;
+        a(isnan(a)) = 0 ;
         P(3*i+2,3*k+1)=Q(i+1,k+1)+a*td(i+1,k+1,1);
         P(3*i+3,3*k+1)=Q(i+2,k+1)-a*td(i+2,k+1,1);
     end
@@ -99,6 +101,7 @@ end
 for i=0:m
     for k=0:n-1
         b=s(k+1)*delta_vl(k+1)/3;
+        b(isnan(b)) = 0 ;
         P(3*i+1,3*k+2)=Q(i+1,k+1)+b*td(i+1,k+1,2);
         P(3*i+1,3*k+3)=Q(i+1,k+2)-b*td(i+1,k+2,2);
     end
@@ -144,7 +147,7 @@ P = DiscardInnerRowsandColumns (P);
         alphak(1,l+1)=abs(q(1,l+2)*q(1,l+1))/(abs(q(1,l+1)*q(1,l+2))+abs(q(1,l+3)*q(1,l+4)));
         alphak(isnan(alphak))=0;
         Vk(1,l+1)=(1-alphak(1,l+1))*q(1,l+1)+alphak(1,l+1)*q(1,l+2);
-        Tu0l=Vk./abs(Vk);
+        Tu0l(1,l+1)=Vk(1,l+1)/abs(Vk(1,l+1));
         
     end
 
@@ -155,15 +158,15 @@ P = DiscardInnerRowsandColumns (P);
         q=zeros(n+1,m+4);
         q1=diff(Q,1,2);
         q(:,3:end-2)=q1;
-        q(k+1,2)=2*q(k+1,3)-q(k+1,4);
-        q(k+1,1)=2*q(k+1,2)-q(k+1,3);
-        q(k+1,m+3)=2*q(k+1,m+2)-q(k+1,m+1);
-        q(k+1,m+4)=2*q(k+1,m+3)-q(k+1,m+2);
+        q(:,2)=2*q(:,3)-q(:,4);
+        q(:,1)=2*q(:,2)-q(:,3);
+        q(:,m+3)=2*q(:,m+2)-q(:,m+1);
+        q(:,m+4)=2*q(:,m+3)-q(:,m+2);
         alphak(k+1,l+1)=abs(q(k+1,l+2)*q(k+1,l+1))...
             /(abs(q(k+1,l+1)*q(k+1,l+2))+abs(q(k+1,l+3)*q(k+1,l+4)));
         alphak(isnan(alphak))=0;
         Vk(k+1,l+1)=(1-alphak(k+1,l+1))*q(k+1,l+1)+alphak(k+1,l+1)*q(k+1,l+2);
-        Tukl=Vk./abs(Vk); 
+        Tukl(k+1,l+1)=Vk(k+1,l+1)/abs(Vk(k+1,l+1));
     end
 
 %% TODO: Compute and load T^v_{k,0} into td(k+1, 0+1, 1+1)
@@ -179,8 +182,8 @@ P = DiscardInnerRowsandColumns (P);
         q(n+4,1)=2*q(n+3,1)-q(n+2,1);
         alphak(k+1,1)=abs(q(k+2,1)*q(k+1,1))/(abs(q(k+1,1)*q(k+2,1))+abs(q(k+3,1)*q(k+4,1)));
         alphak(isnan(alphak))=0;
-        Vv(k+1,1)=(1-alphak(k+1,1))*q(k+1,1)+alphak(k+1,1)*q(k+2,1);
-        Tvk0=Vv./abs(Vv);
+        Vv(k+1,1)=(1-alphak(k+1))*q(k+1,1)+alphak(k+1,1)*q(k+2,1);
+        Tvk0(k+1,1)=Vv(k+1,1)/abs(Vv(k+1,1));
         
     end
 
@@ -242,86 +245,54 @@ P = DiscardInnerRowsandColumns (P);
 
 %% TODO: Compute the D^{uv}_{k,l} by eq. (9.59) and load into td(k, l, 2)
     function Duvkl = ComputeDuvkl (k, l)
-        Duvkl = 0;
+        Duvkl = zeros(n+1,m+1) ;
         
-        for k=0:n
-            for l=0:m
-                D_u(k+1,l+1)=r(l+1)*td(k+1,l+1,1);
-            end
-        end
         %Calcolo Dvkl
-        for l=0:m
-            for k=0:m
-                D_v(k+1,l+1)=s(k+1)*td(k+1,l+1,2);
-            end
-        end
+        D_u = r.*td(:,:,1);
         
-        for k=1:n
-            delta_uk(k)=ub(k+1)-ub(k);
-        end
+        %Calcolo Dvkl
+        
+        D_v =s.*td(:,:,2);
+        
+        %computing delta_uk
+        delta_uk = diff(ub') ;
+        
         %computing delta_vl
-        
-        for l=1:m
-            delta_vl(l)=vb(l+1)-vb(l);
-        end
-        
-        
+        delta_vl = diff(vb');
         
         
         %Calcolo alpha_k and beta_l
         
-        for k=1:n-1
-            alpha_k(k)=delta_uk(k)/(delta_uk(k)+delta_uk(k+1));
-        end
-        
-        
-        for l=1:m-1
-            beta_l(l)=delta_vl(l)/(delta_vl(l)+delta_vl(l+1));
-        end
+        a_k = delta_uk(1:end-1)./(delta_uk(1:end-1)+delta_uk(2:end));
+        b_l = delta_vl(1:end-1)./(delta_vl(1:end-1)+delta_vl(2:end));
+        q_k = diff(Q,1,2);
+        d_k = q_k./delta_uk ;
         
         %Calcolo duvkl e dvukl
         
-        for l=1:m-1
-            for k=1:n-1
-                d_vu(k,l)=(1-alpha_k(k))*(D_v(k+1,l)-D_v(k,l))/delta_uk(k)+alpha_k(k)*(D_v(k+2,l)-D_v(k+1,l))/delta_uk(k+1) ;
-                
-            end
-        end
-        for k=1:n-1
-            for l=1:m-1
-                d_uv(k,l)=(1-beta_l(l))*(D_u(k,l+1)-D_u(k,l))/delta_vl(l)+beta_l(l)*(D_u(k,l+2)-D_u(k,l+1))/delta_vl(l+1);
-            end
-        end
+        d_vu = (1-a_k) .* (D_v(2:end-1,2:end-1)-D_v(1:end-2,2:end-1)) ./(delta_uk(1:end-1)) ...
+            + a_k.*(D_v(3:end,2:end-1)-D_v(2:end-1,2:end-1))./ delta_uk(2:end) ;
         
-        %Calcolo il "cuore" della matrice D_uv, i boundaries verranno calcolati
-        %successivamente
-        for k=1:n-1
-            for l=1:m-1
-                Duvkl(k+1,l+1)=(alpha_k(k)*d_uv(k,l)+beta_l(l)*d_vu(k,l))/(alpha_k(k)+beta_l(l));
-            end
-        end
+        d_uv= (1-b_l) .* (D_u(2:end-1,2:end-1)-D_u(1:end-2,2:end-1))./delta_vl(1:end-1)+b_l...
+            .*(D_u(3:end,2:end-1)-D_u(2:end-1,2:end-1))./delta_vl(2:end);
         
-        %Ciclo for per calcolare gli estremi di D_uv tramite il three point scheme
-        %(9.32) (9.28)
-        %Calcolo prima d_k e q_k
-        q_k=diff(Q,1,2);
-        for k=1:n+1
-            for l=1:m
-                d_k(k,l)=q_k(k,l)/delta_uk(l);
-            end
-        end
+        %Calcolo il "cuore" della matrice tramite la formula (9.59)
         
-        %Calcolo elementi interni della prima e ultima riga di D_uv
-        for k=2:n
-            Duvkl(1,k)=(1-alpha_k(k-1))*d_k(1,k-1)+alpha_k(k-1)*d_k(1,k);
-            Duvkl(n+1,k)=(1-alpha_k(k-1))*d_k(n+1,k-1)+alpha_k(k-1)*d_k(n+1,k);
-        end
+        Duvkl(2:end-1,2:end-1)=(a_k.*d_uv+b_l.*d_vu)./(a_k+b_l);
         
-        %Calcolo primo e ultimo elemento di ogni riga
-        for l=1:n+1
-            Duvkl(l,1)=2*d_k(l,1)-Duvkl(l,2);
-            Duvkl(l,n+1)=2*d_k(l,n)-Duvkl(l,n-1);
-        end
+        % End formulas (9.32) and (9.28) for the boundaries (three point
+        % method)
+        
+        
+        %Calcolo elementi interni della prima e ultima riga di D_uv (9.28)
+        
+        Duvkl(1,2:end-1) = (1-a_k).*d_k(1,1:end-1)+a_k.*d_k(1,2:end);
+        Duvkl(n+1,2:end-1) = (1-a_k).*d_k(n+1,1:end-1)+a_k.*d_k(n+1,2:end);
+        
+        %Calcolo primo e ultimo elemento di ogni riga (9.32)
+        Duvkl(:,1) = 2*d_k(:,1)-Duvkl(:,2);
+        Duvkl(:,n+1) = 2*d_k(:,n)-Duvkl(:,n+1);
+        
         
     end
 
