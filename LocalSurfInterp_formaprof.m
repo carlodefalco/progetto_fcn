@@ -1,4 +1,4 @@
-function [U, V, P] = LocalSurfInterp (n, m, Q)
+function [U, V, P, td] = LocalSurfInterp (n, m, Q)
 
 %%LocalSurfInterp
 %% Local Surface interpolation
@@ -252,7 +252,8 @@ P = DiscardInnerRowsandColumns (P);
         
         %Calcolo Dvkl
         
-        D_v =s.*td(:,:,2);
+        D_v =s'.*td(:,:,2);
+        
         
         %computing delta_uk
         delta_uk = diff(ub') ;
@@ -267,31 +268,36 @@ P = DiscardInnerRowsandColumns (P);
         b_l = delta_vl(1:end-1)./(delta_vl(1:end-1)+delta_vl(2:end));
         q_k = diff(Q,1,2);
         d_k = q_k./delta_uk ;
+        q_l = diff(Q,1,1) ;
+        d_l = q_l./delta_vl' ;
+       
         
         %Calcolo duvkl e dvukl
         
-        d_vu = (1-a_k) .* (D_v(2:end-1,2:end-1)-D_v(1:end-2,2:end-1)) ./(delta_uk(1:end-1)) ...
-            + a_k.*(D_v(3:end,2:end-1)-D_v(2:end-1,2:end-1))./ delta_uk(2:end) ;
+        d_vu = (1-a_k) .* (diff(D_v(1:n,2:n),1,1)) ./(delta_uk(1:n-1)) ...
+            + a_k.*(diff(D_v(2:n+1,2:n),1,1))./ delta_uk(2:n) ;
+
         
-        d_uv= (1-b_l) .* (D_u(2:end-1,2:end-1)-D_u(2:end-1,1:end-2))./delta_vl(1:end-1)+b_l...
-            .*(D_u(2:end-1,3:end)-D_u(2:end-1,2:end-1))./delta_vl(2:end);
+          d_uv= (1-b_l) .* (diff(D_u(2:n,1:n),1,2))./delta_vl(1:n-1)+b_l...
+            .*(diff(D_u(2:n,2:n+1),1,2))./delta_vl(2:n);
         
         %Calcolo il "cuore" della matrice tramite la formula (9.59)
         
         Duvkl(2:end-1,2:end-1)=(a_k.*d_uv+b_l.*d_vu)./(a_k+b_l);
         
-        % End formulas (9.32) and (9.28) for the boundaries (three point
+        % End formulas (9.32)  for the boundaries (three point
         % method)
         
         
-        %Calcolo elementi interni della prima e ultima riga di D_uv (9.28)
+        %Calcolo elementi interni della prima e ultima riga di Duvkl (9.32)
         
-        Duvkl(1,2:end-1) = (1-a_k).*d_k(1,1:end-1)+a_k.*d_k(1,2:end);
-        Duvkl(n+1,2:end-1) = (1-a_k).*d_k(n+1,1:end-1)+a_k.*d_k(n+1,2:end);
+        Duvkl(1,2:end-1) = 2*d_k(2,2:end-1)-Duvkl(2,2:end-1);
+        Duvkl(n+1,2:end-1) = 2*d_k(n+1,2:end-1)-Duvkl(n,2:end-1) ;
         
-        %Calcolo primo e ultimo elemento di ogni riga (9.32)
-        Duvkl(:,1) = 2*d_k(:,1)-Duvkl(:,2);
-        Duvkl(:,n+1) = 2*d_k(:,n)-Duvkl(:,n+1);
+        %Calcolo elementi interni della prima e ultima colonna di Duvkl (9.32)
+        Duvkl(2:end-1,1) = 2*d_l(2:end-1,2)-Duvkl(2:end-1,2);
+        Duvkl(2:end-1,n+1) = 2*d_l(2:end-1,n+1)-Duvkl(2:end-1,n) ;
+        
         
         
     end
