@@ -273,8 +273,8 @@ P = DiscardInnerRowsandColumns (P);
         d_vu = (1-a_k) .* (D_v(2:end-1,2:end-1)-D_v(1:end-2,2:end-1)) ./(delta_uk(1:end-1)) ...
             + a_k.*(D_v(3:end,2:end-1)-D_v(2:end-1,2:end-1))./ delta_uk(2:end) ;
         
-        d_uv= (1-b_l) .* (D_u(2:end-1,2:end-1)-D_u(1:end-2,2:end-1))./delta_vl(1:end-1)+b_l...
-            .*(D_u(3:end,2:end-1)-D_u(2:end-1,2:end-1))./delta_vl(2:end);
+        d_uv= (1-b_l) .* (D_u(2:end-1,2:end-1)-D_u(2:end-1,1:end-2))./delta_vl(1:end-1)+b_l...
+            .*(D_u(2:end-1,3:end)-D_u(2:end-1,2:end-1))./delta_vl(2:end);
         
         %Calcolo il "cuore" della matrice tramite la formula (9.59)
         
