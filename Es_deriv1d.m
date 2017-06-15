@@ -1,6 +1,5 @@
 uk = linspace (0, 2 * pi, 21);
 Qk = [uk; sin(uk); zeros(size (uk))];
-Dk = deriv_1d (uk, Qk);
 n = size(uk,2) ;
 dk = zeros(3,n-1);
 Dk = zeros(size(Qk)) ;
