@@ -70,11 +70,20 @@ vb(m+1) = 1;
 
 for k=0:n
     for l=0:m
-        
         Duvkl = ComputeDuvkl (k, l);
         td(k+1, l+1, 2+1) = Duvkl(k+1,l+1) ;
     end
 end
+
+%% TODO: End formulas (9.32) for the boundaries of D^{uv}_{k,l} (three point method)
+%
+%                 Calcolo elementi interni della prima e ultima riga di Duvkl (9.32)
+td(1,2:end-1,3) = 2*d_uv(2,:)-td(2,2:end-1,3) ;
+td(end,2:end-1,3) = 2*d_uv(end,:)-Duvkl(n,l+1) ;
+%
+%                                 Calcolo elementi interni della prima e ultima colonna di Duvkl (9.32)
+td(2:end-1,1,3) = 2*d_vu(:,2)-td(2:end-1,2,3);
+td(2:end-1,n+1,3) = 2*d_vu(:,end)-td(2:end-1,n,3) ;
 
 
 %%       Compute all Bezier control points along each
@@ -201,7 +210,7 @@ P = DiscardInnerRowsandColumns (P);
         alphak(k+1,l+1)=abs(q(k+2,l+1)*q(k+1,l+1))/(abs(q(k+1,l+1)*q(k+2,l+1))+abs(q(k+3,l+1)*q(k+4,l+1)));
         alphak(isnan(alphak))=0;
         Vv(k+1,l+1)=(1-alphak(k+1,l+1))*q(k+1,l+1)+alphak(k+1,l+1)*q(k+2,l+1);
-        Tvkl=Vv./abs(Vv);
+        Tvkl(k+1,l+1)=Vv(k+1,l+1)./abs(Vv(k+1,l+1));
     end
 
 
@@ -247,56 +256,35 @@ P = DiscardInnerRowsandColumns (P);
     function Duvkl = ComputeDuvkl (k, l)
         Duvkl = zeros(n+1,m+1) ;
         
-        %Calcolo Dvkl
-        D_u = r.*td(:,:,1);
         
-        %Calcolo Dvkl
+        D_u(k+1,:) = r.*td(k+1,:,1) ;
+        D_v(:,l+1) =s'.*td(:,l+1,2);
         
-        D_v =s'.*td(:,:,2);
-        
-        
-        %computing delta_uk
-        delta_uk = diff(ub') ;
-        
-        %computing delta_vl
-        delta_vl = diff(vb');
-        
-        
-        %Calcolo alpha_k and beta_l
-        
-        a_k = delta_uk(1:end-1)./(delta_uk(1:end-1)+delta_uk(2:end));
-        b_l = delta_vl(1:end-1)./(delta_vl(1:end-1)+delta_vl(2:end));
-        q_k = diff(Q,1,2);
-        d_k = q_k./delta_uk ;
-        q_l = diff(Q,1,1) ;
-        d_l = q_l./delta_vl' ;
-       
-        
-        %Calcolo duvkl e dvukl
-        
-        d_vu = (1-a_k) .* (diff(D_v(1:n,2:n),1,1)) ./(delta_uk(1:n-1)) ...
-            + a_k.*(diff(D_v(2:n+1,2:n),1,1))./ delta_uk(2:n) ;
-
-        
-          d_uv= (1-b_l) .* (diff(D_u(2:n,1:n),1,2))./delta_vl(1:n-1)+b_l...
-            .*(diff(D_u(2:n,2:n+1),1,2))./delta_vl(2:n);
-        
-        %Calcolo il "cuore" della matrice tramite la formula (9.59)
-        
-        Duvkl(2:end-1,2:end-1)=(a_k.*d_uv+b_l.*d_vu)./(a_k+b_l);
-        
-        % End formulas (9.32)  for the boundaries (three point
-        % method)
+        if (1<=k)&& (k<=n-1)
+            if (1<=l)&& (l<=m-1)
+                delta_uk(1) = ub(2)-ub(1) ;
+                delta_uk(k+1) = ub(k+2)-ub(k+1) ;
+                delta_vl(1) = vb(2)-vb(1) ;
+                delta_vl(l+1) = vb(l+2)-vb(l+1);
+                
+                %Calcolo alpha_k and beta_l
+                a_k = delta_uk(k)./(delta_uk(k)+delta_uk(k+1));
+                b_l = delta_vl(l)./(delta_vl(l)+delta_vl(l+1));
+                d_vu(k,l) = (1-a_k) * (D_v(k+1,l+1)-D_v(k,l+1)) /(delta_uk(k)) ...
+                    + a_k*(D_v(k+2,l+1)-D_v(k+1,l+1))/ delta_uk(k+1) ;
+                d_uv(k,l) = (1-b_l) * (D_u(k+1,l+1)-D_u(k+1,l))/delta_vl(l)+b_l...
+                    *(D_u(k+1,l+2)-D_u(k+1,l+1))/delta_vl(l+1);
+                
+                %Calcolo il "cuore" della matrice tramite la formula (9.59)
+                
+                Duvkl(k+1,l+1)=(a_k*d_uv(k,l)+b_l*d_vu(k,l))/(a_k+b_l);
+               
+            end
+        end
         
         
-        %Calcolo elementi interni della prima e ultima riga di Duvkl (9.32)
         
-        Duvkl(1,2:end-1) = 2*d_k(2,2:end-1)-Duvkl(2,2:end-1);
-        Duvkl(n+1,2:end-1) = 2*d_k(n+1,2:end-1)-Duvkl(n,2:end-1) ;
         
-        %Calcolo elementi interni della prima e ultima colonna di Duvkl (9.32)
-        Duvkl(2:end-1,1) = 2*d_l(2:end-1,2)-Duvkl(2:end-1,2);
-        Duvkl(2:end-1,n+1) = 2*d_l(2:end-1,n+1)-Duvkl(2:end-1,n) ;
         
         
         
