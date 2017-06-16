@@ -7,12 +7,12 @@ n = size(uk,2) ;
 Dk = zeros(size(Qk)) ;
 
 for k=0:n-3
-        Duk(k+1) = uk(k+2)-uk(k+1);
+        Duk(1) = uk(2)-uk(1);
         Duk(k+2) = uk(k+3)-uk(k+2);
         ak = Duk(k+1)/(Duk(k+1)+Duk(k+2));
-        qk(:,k+1) = Qk(:,k+2)-Qk(:,k+1) ;
+        qk(:,1) = Qk(:,2)-Qk(:,1) ;
         qk(:,k+2) = Qk(:,k+3)-Qk(:,k+2) ;
-        dk(:,k+1) = qk(:,k+1)./Duk(k+1);
+        dk(:,1) = qk(:,1)./Duk(1);
         dk(:,k+2) = qk(:,k+2)./Duk(k+2);
         Dk(:,k+2) = (1-ak)*dk(:,k+1) + ak*dk(:,k+2) ;
 end
