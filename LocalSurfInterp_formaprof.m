@@ -302,10 +302,10 @@ P = DiscardInnerRowsandColumns (P);
 %% TODO: Compute the four inner control points of the (k,l)th
 %% Bezier patch and load them into P
     function P = ComputeInnerControlPoints (P)
-        
+        gamma = (delta_uk(2:end)' * delta_vl(2:end))/9;
         for k=0:n-1
             for l=0:m-1
-                gamma = (delta_uk(k+1) * delta_vl(l+1))/9;
+                
                 P(3*k+2,3*l+2,:) = gamma * td(k+1,l+1,:,3) + P(k+1,l+2,:) + P(k+2,l+1,:) - P(k+1,l+1,:);
                 P(3*k+3,3*l+2,:) = -gamma * td(k+2,l+1,:,3) + P(k+4,l+2,:) - P(k+4,l+1,:) + P(k+3,l+1,:);
                 P(3*k+2,3*l+3,:) = -gamma * td(k+1,l+2,:,3) + P(k+2,l+4,:) - P(k+1,l+4,:) + P(k+1,l+3,:);
