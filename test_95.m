@@ -1,20 +1,19 @@
-clc
-clear all
-close all
-out = A93_94_95_test_data (10 , 10, 17, 25);
+out = A93_94_95_test_data (20, 20 , 17, 25);
 %Put ii=1 per prima figura,ii=2 per seconda
-ii=2;
-Qx=out{ii,1,1};
-Qy=out{ii,1,2};
-Qz=out{ii,1,3};
-[n,m]=size(Qx);
+ii=1;
+Q(:,:,1)=out{ii,1,1};
+Q(:,:,2)=out{ii,1,2};
+Q(:,:,3)=out{ii,1,3};
+[n,m,o]=size(Q);
 n=n-1;
 m=m-1;
- 
-[Ux,Vx,Px]=LocalSurfInterp_formaprof(n,m,Qx);
-[Uy,Vy,Py]=LocalSurfInterp_formaprof(n,m,Qy);
-[Uz,Vz,Pz]=LocalSurfInterp_formaprof(n,m,Qz);
-P(:,:,1)=Px;
-P(:,:,2)=Py;
-P(:,:,3)=Pz;
 
+[U,V,P]=LocalSurfInterp_formaprof(n,m,Q);
+
+knots = {U V} ;
+cntrl(1,:,:)=P(:,:,1);
+cntrl(2,:,:)=P(:,:,2);
+cntrl(3,:,:)=P(:,:,3);
+nrb = nrbmak(cntrl,knots);
+figure
+nrbplot(nrb,[20 20]);
