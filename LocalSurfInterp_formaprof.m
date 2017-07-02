@@ -1,4 +1,4 @@
-function [U, V, P] = LocalSurfInterp_formaprof (n, m, Q)
+function [U, V, P, td] = LocalSurfInterp_formaprof (n, m, Q)
 
 %%LocalSurfInterp
 %% Local Surface interpolation
@@ -14,13 +14,11 @@ td = zeros (n+1, m+1, 3, 3);
 
 for l = 0:m
     %% TODO: Compute and load T^u_{0,l} into td(0+1, l+1, 0+1)
-    Tu0l = ComputeTu0l (l);
-    td(0+1, l+1, :, 0+1) = Tu0l(1,l+1,:);
+    td(0+1, l+1, :, 0+1) = ComputeTu0l (l);
     r(l+1) = 0;
     for k = 1:n
         %% TODO: Compute and load T^u_{k,l} into td(k+1, l+1, 0+1)
-        Tukl = ComputeTukl(k,l);
-        td(k+1, l+1, :, 0+1) = Tukl(k+1,l+1,:);
+        td(k+1, l+1, :, 0+1) = ComputeTukl(k,l);
         d = sqrt( (Q(k+1, l+1, 1) - Q(k, l+1, 1))^2+...
             (Q(k+1, l+1, 2) - Q(k, l+1, 2))^2+(Q(k+1, l+1, 3) - Q(k, l+1, 3))^2);
         ub(k+1) = ub(k+1) + d;
@@ -41,13 +39,11 @@ vb = zeros (m+1, 1);
 
 for k = 0:n
     %% TODO: Compute and load T^v_{k,0} into td(k+1, 0+1, 1+1)
-    Tvk0 = ComputeTvk0 (k) ;
-    td(k+1, 0+1, :, 1+1) = Tvk0(k+1,1,:);
+    td(k+1, 0+1, :, 1+1) = ComputeTvk0 (k) ;
     s(k+1) = 0;
     for l = 1:m
         %% TODO: Compute and load T^v_{k,l} into td(k+1, l+1, 1+1)
-        Tvkl = ComputeTvkl (k, l) ;
-        td(k+1, l+1, :, 1+1) = Tvkl(k+1,l+1,:);
+        td(k+1, l+1, :, 1+1) = ComputeTvkl (k, l) ;
         d = sqrt( (Q(k+1, l+1, 1) - Q(k+1, l, 1))^2+(Q(k+1, l+1, 2) - Q(k+1, l, 2))^2+ ...
             (Q(k+1, l+1, 3) - Q(k+1, l, 3))^2);
         vb(l+1) = vb(l+1) + d;
@@ -122,74 +118,90 @@ P = DiscardInnerRowsandColumns (P);
 
 %% TODO: Compute and load T^u_{0,l} into td(0+1, l+1, 0+1)
     function Tu0l = ComputeTu0l (l)
-        q = zeros(n+1,m+4,3);
-        q(:,3:end-2,:) = diff(Q,1,2);
-        q(1,2,:) = 2 * q(1,3,:) - q(1,4,:);
-        q(1,1,:) = 2 * q(1,2,:) - q(1,3,:);
-        q(1,m+3,:) = 2 * q(1,m+2,:) - q(1,m+1,:);
-        q(1,m+4,:) = 2 * q(1,m+3,:) - q(1,m+2,:);
-        c1 = cross(q(1,l+2,:),q(1,l+1,:)) ;
-        c2 = cross(q(1,l+1,:),q(1,l+2,:)) ;
-        c3 = cross(q(1,l+3,:),q(1,l+4,:)) ;
-        alphak(1,l+1) = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
-            sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) + sqrt(c3(1,1,1)^2+c3(1,1,2)^2+c3(1,1,3)^2) ;
+        if ( l < 2 )
+            q(1,3:4,:) = diff(Q(1,l+1:l+3,:),1,2);
+            q(1,2,:) = 2 * q(1,3,:) - q(1,4,:);
+            q(1,1,:) = 2 * q(1,2,:) - q(1,3,:);
+        elseif ( l> m-2 )
+            q(1,1:2,:) = diff(Q(1,l-2:l,:),1,2);
+            q(1,3,:) = 2 * q(1,2,:) - q(1,1,:);
+            q(1,4,:) = 2 * q(1,3,:) - q(1,2,:);
+        else
+            q = diff(Q(1,l-1:l+3,:),1,2);
+        end
+        c1 = cross(q(1,1,:),q(1,2,:));
+        c2 = cross(q(1,3,:),q(1,4,:));
+        alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
+            (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
         alphak(isnan(alphak)) = 0;
-        Vk(1,l+1,:) = (1-alphak(1,l+1,:)) .*q(1,l+1,:) + alphak(1,l+1,:) .*q(1,l+2,:);
-        Tu0l(1,l+1,:) = Vk(1,l+1,:) / sqrt((Vk(1,l+1,1))^2 + (Vk(1,l+1,2))^2 + (Vk(1,l+1,3))^2);
+        Vk = (1-alphak) .*q(1,2,:) + alphak .*q(1,3,:);
+        Tu0l = Vk / sqrt((Vk(:,:,1))^2 + (Vk(:,:,2))^2 + (Vk(:,:,3))^2);
     end
 
 %% TODO: Compute and load T^u_{k,l} into td(k+1, l+1, 0+1)
     function Tukl = ComputeTukl (k, l)
-        q = zeros(n+1,m+4,3);
-        q(:,3:end-2,:) = diff(Q,1,2);
-        q(:,2,:) = 2 * q(:,3,:) - q(:,4,:);
-        q(:,1,:) = 2 * q(:,2,:) - q(:,3,:);
-        q(:,m+3,:) = 2 * q(:,m+2,:) - q(:,m+1,:);
-        q(:,m+4,:) = 2 * q(:,m+3,:) - q(:,m+2,:);
-        e1 = cross(q(k+1,l+2,:),q(k+1,l+1,:)) ;
-        e2 = cross(q(k+1,l+1,:),q(k+1,l+2,:)) ;
-        e3 = cross(q(k+1,l+3,:),q(k+1,l+4,:)) ;
-        alphak = sqrt(e1(1,1,1)^2 + e1(1,1,2)^2 + e1(1,1,3)^2)/...
-            sqrt(e2(1,1,1)^2 + e2(1,1,2)^2 + e2(1,1,3)^2) + sqrt(e3(1,1,1)^2 + e3(1,1,2)^2 + e3(1,1,3)^2) ;
+        if ( l < 2 )
+            q(1,3:4,:) = diff(Q(k+1,l+1:l+3,:),1,2);
+            q(1,2,:) = 2 * q(1,3,:) - q(1,4,:);
+            q(1,1,:) = 2 * q(1,2,:) - q(1,3,:);
+        elseif ( l> m-2 )
+            q(1,1:2,:) = diff(Q(k+1,l-2:l,:),1,2);
+            q(1,3,:) = 2 * q(1,2,:) - q(1,1,:);
+            q(1,4,:) = 2 * q(1,3,:) - q(1,2,:);
+        else
+            q = diff(Q(k+1,l-1:l+3,:),1,2);
+        end
+        c1 = cross(q(1,1,:),q(1,2,:));
+        c2 = cross(q(1,3,:),q(1,4,:));
+        alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
+            (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
         alphak(isnan(alphak)) = 0;
-        Vk(k+1,l+1,:) = (1-alphak) .* q(k+1,l+1,:) + alphak .*q(k+1,l+2,:);
-        Tukl(k+1,l+1,:) = Vk(k+1,l+1,:) / sqrt(Vk(k+1,l+1,1)^2 + Vk(k+1,l+1,2)^2 + Vk(k+1,l+1,3)^2);
+        Vk = (1-alphak) .*q(1,2,:) + alphak .*q(1,3,:);
+        Tukl = Vk / sqrt((Vk(:,:,1))^2 + (Vk(:,:,2))^2 + (Vk(:,:,3))^2);
     end
 
 %% TODO: Compute and load T^v_{k,0} into td(k+1, 0+1, 1+1)
     function Tvk0 = ComputeTvk0 (k)
-        q = zeros(n+4,m+1,3);
-        q(3:end-2,:,:) = diff(Q,1,1);
-        q(2,1,:) = 2 * q(3,1,:) - q(4,1,:);
-        q(1,1,:) = 2 * q(2,1,:) - q(3,1,:);
-        q(n+3,1,:) = 2 * q(n+2,1,:) - q(n+1,1,:);
-        q(n+4,1,:) = 2 * q(n+3,1,:) - q(n+2,1,:);
-        f1 = cross(q(k+2,1,:),q(k+1,1,:));
-        f2 = cross(q(k+1,1,:),q(k+2,1,:));
-        f3 = cross(q(k+3,1,:),q(k+4,1,:));
-        alphak = sqrt(f1(1,1,1)^2 + f1(1,1,2)^2 + f1(1,1,3)^2)/...
-            sqrt(f2(1,1,1)^2 + f2(1,1,2)^2 + f2(1,1,3)^2) + sqrt(f3(1,1,1)^2 + f3(1,1,2)^2 + f3(1,1,3)^2) ;
+        if ( k < 2 )
+            q(3:4,1,:) = diff(Q(k+1:k+3,1,:),1,1);
+            q(2,1,:) = 2 * q(3,1,:) - q(4,1,:);
+            q(1,1,:) = 2 * q(2,1,:) - q(3,1,:);
+        elseif ( k > n-2 )
+            q(1:2,1,:) = diff(Q(k-2:k,1,:),1,1);
+            q(3,1,:) = 2 * q(2,1,:) - q(1,1,:);
+            q(4,1,:) = 2 * q(3,1,:) - q(2,1,:);
+        else
+            q = diff(Q(k-1:k+3,1,:),1,1);
+        end
+        c1 = cross(q(1,1,:),q(2,1,:));
+        c2 = cross(q(3,1,:),q(4,1,:));
+        alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
+            (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
         alphak(isnan(alphak)) = 0;
-        Vv(k+1,1,:) = (1-alphak) .* q(k+1,1,:) + alphak .* q(k+2,1,:);
-        Tvk0(k+1,1,:) = Vv(k+1,1,:) / sqrt(Vv(k+1,1,1)^2 + Vv(k+1,1,2)^2 + Vv(k+1,1,3)^2);
+        Vv = (1-alphak) .*q(2,1,:) + alphak .*q(3,1,:);
+        Tvk0 = Vv / sqrt((Vv(:,:,1))^2 + (Vv(:,:,2))^2 + (Vv(:,:,3))^2);
     end
 
 %% TODO: Compute and load T^v_{k,l} into td(k+1, l+1, 1+1)
     function Tvkl = ComputeTvkl (k, l)
-        q = zeros(n+4,m+1,3);
-        q(3:end-2,:,:) = diff(Q,1,1);
-        q(2,l+1,:) = 2 * q(3,l+1,:) - q(4,l+1,:);
-        q(1,l+1,:) = 2 * q(2,l+1,:) - q(3,l+1,:);
-        q(m+3,l+1,:) = 2 * q(m+2,l+1,:) - q(m+1,l+1,:);
-        q(m+4,l+1,:) = 2 * q(m+3,l+1,:) - q(m+2,l+1,:);
-        g1 = cross(q(k+2,l+1,:),q(k+1,l+1,:));
-        g2 = cross(q(k+1,l+1,:),q(k+2,l+1,:));
-        g3 = cross(q(k+3,l+1,:),q(k+4,l+1,:));
-        alphak = sqrt(g1(1,1,1)^2 + g1(1,1,2)^2 + g1(1,1,3)^2)/...
-            sqrt(g2(1,1,1)^2 + g2(1,1,2)^2 + g2(1,1,3)^2) + sqrt(g3(1,1,1)^2 + g3(1,1,2)^2 + g3(1,1,3)^2) ;
+        if ( k < 2 )
+            q(3:4,1,:) = diff(Q(k+1:k+3,l+1,:),1,1);
+            q(2,1,:) = 2 * q(3,1,:) - q(4,1,:);
+            q(1,1,:) = 2 * q(2,1,:) - q(3,1,:);
+        elseif ( k > n-2 )
+            q(1:2,1,:) = diff(Q(k-2:k,l+1,:),1,1);
+            q(3,1,:) = 2 * q(2,1,:) - q(1,1,:);
+            q(4,1,:) = 2 * q(3,1,:) - q(2,1,:);
+        else
+            q = diff(Q(k-1:k+3,l+1,:),1,1);
+        end
+        c1 = cross(q(1,1,:),q(2,1,:));
+        c2 = cross(q(3,1,:),q(4,1,:));
+        alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
+            (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
         alphak(isnan(alphak)) = 0;
-        Vv(k+1,l+1,:) = (1-alphak) .* q(k+1,l+1,:) + alphak .* q(k+2,l+1,:);
-        Tvkl(k+1,l+1,:) = Vv(k+1,l+1,:) /sqrt((Vv(k+1,l+1,1)^2) + (Vv(k+1,l+1,2)^2) + (Vv(k+1,l+1,3)^2));
+        Vv = (1-alphak) .*q(2,1,:) + alphak .*q(3,1,:);
+        Tvkl = Vv / sqrt((Vv(:,:,1))^2 + (Vv(:,:,2))^2 + (Vv(:,:,3))^2);
     end
 
 
@@ -233,47 +245,49 @@ P = DiscardInnerRowsandColumns (P);
 
 %% TODO: Compute the D^{uv}_{k,l} by eq. (9.59) and load into td(k, l, 2)
     function Duvkl = ComputeDuvkl (k, l)
-        D_u(k+1,:,:) = r .* td(k+1,:,:,1) ;
-        D_v(:,l+1,:) = s' .* td(:,l+1,:,2) ;
-        
+
         if (l == 0)
+            D_u(1,1:3,:) = r(l+1) .* td(k+1,1:3,:,1) ;
             Dvl = diff(vb(1:3));
             bl = Dvl(1) / (Dvl(1) + Dvl(2));
-            Delta_D_u = diff(D_u(:,1:3,:),1,2);
+            Delta_D_u = diff(D_u(1,1:3,:),1,2);
             dl = Delta_D_u ./Dvl';
             dl(:,2) = (1-bl) * dl(:,1) + bl * dl(:,2);
             c3 = 2;
             c4 = -1;
         elseif (l == m)
+            D_u(1,1:3,:) = r(l+1) .* td(k+1,m-1:m+1,:,1) ;
             Dvl = diff(vb(m-1:m+1));
             bl = Dvl(1) / (Dvl(1) + Dvl(2));
-            Delta_D_u = diff(D_u(:,n-1:n+1,:),1,2);
+            Delta_D_u = diff(D_u(1,1:3,:),1,2);
             dl = Delta_D_u ./Dvl';
             dl(:,2) = (1-bl) * dl(:,1) + bl * dl(:,2);
             c3 = -1;
             c4 = 2;
         else
+            D_u(1,1:3,:) = r(l+1) .* td(k+1,l:l+2,:,1) ;
             Dvl = diff(vb(l:l+2));
             bl = Dvl(1) / (Dvl(1) + Dvl(2));
-            Delta_D_u = diff(D_u(:,l:l+2,:),1,2);
+            Delta_D_u = diff(D_u(1,1:3,:),1,2);
             dl = Delta_D_u./Dvl';
             c3 = ( 1-bl);
             c4 = bl;
         end
         if (k == 0)
+            D_v(1:3,1,:) = s(k+1) .* td(1:3,l+1,:,2) ;
             Duk = diff (ub(1:3));
             ak  = Duk(1) / (Duk(1) + Duk(2));
-            Delta_Dv = diff(D_v(1:3,:,:),1,1) ;
+            Delta_Dv = diff(D_v(1:3,1,:),1,1) ;
             dk  = Delta_Dv ./ Duk;
             dk(2,:)  = (1 - ak) * dk(1,:) + ak * dk(2,:);
             c1  =  2;
             c2  = -1;
             
         elseif (k == n)
-            
+            D_v(1:3,1,:) = s(k+1) .* td(n-1:n+1,l+1,:,2) ;
             Duk = diff (ub(n-1:n+1));
             ak  = Duk(1) / (Duk(1) + Duk(2));
-            Delta_Dv = diff(D_v(n-1:n+1,:,:),1,1) ;
+            Delta_Dv = diff(D_v(1:3,1,:),1,1) ;
             dk  = Delta_Dv ./ Duk;
             dk(2,:)  = (1 - ak) * dk(1,:) + ak * dk(2,:);
             c1  = -1;
@@ -282,10 +296,10 @@ P = DiscardInnerRowsandColumns (P);
             
             
         else
-            
+            D_v(1:3,1,:) = s(k+1) .* td(k:k+2,l+1,:,2) ;
             Duk = diff (ub(k:k+2));
             ak  = Duk(1) / (Duk(1) + Duk(2));
-            Delta_Dv = diff(D_v(k:k+2,:,:),1,1);
+            Delta_Dv = diff(D_v(1:3,1,:),1,1);
             dk  = Delta_Dv ./ Duk;
             c1  = (1 - ak);
             c2  = ak;
@@ -293,9 +307,9 @@ P = DiscardInnerRowsandColumns (P);
         end
         
         
-        D_vu(k+1,:,:) = c1 * dk(1,:,:) + c2 * dk(2,:,:);
-        D_uv(:,l+1,:) = c3 * dl(:,1,:) + c4 * dl(:,2,:) ;
-        Duvkl = (c2 * D_uv(k+1,l+1,:) + c4 * D_vu(k+1,l+1,:)) /(c2+c4);
+        d_vu = c1 * dk(1,:,:) + c2 * dk(2,:,:);
+        d_uv = c3 * dl(:,1,:) + c4 * dl(:,2,:) ;
+        Duvkl = (c2 * d_uv + c4 * d_vu) /(c2+c4);
 
     end
 
