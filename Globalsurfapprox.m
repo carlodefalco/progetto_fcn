@@ -1,7 +1,6 @@
 function [U,V,P,N,NN]=Globalsurfapprox(r,s,q,p,Q,n,m)
 
 [ub,vb]=Surfmeshpar(r,s,Q);
-%plot3(Q(:,:,1),Q(:,:,2),Q(:,:,3),'x')
 
 % Compute knots U by Eqs. (9.68),(9.69);
 d=(r+1)/(n-p+1);
@@ -80,13 +79,6 @@ for j=0:s
     Temp1(:,j+1,1)=NTNu\Ru(:,j+1,1);
     Temp1(:,j+1,2)=NTNu\Ru(:,j+1,2);
     Temp1(:,j+1,3)=NTNu\Ru(:,j+1,3);
-%     PP(:,j+1,1)=avanti(L,M*Ru(:,j+1,1));
-%     PP(:,j+1,2)=avanti(L,M*Ru(:,j+1,2));
-%     PP(:,j+1,3)=avanti(L,M*Ru(:,j+1,3));
-% 
-%     Temp1(:,j+1,1)=indietro(UU,PP(:,j+1,1));
-%     Temp1(:,j+1,2)=indietro(UU,PP(:,j+1,2));
-%     Temp1(:,j+1,3)=indietro(UU,PP(:,j+1,3));
 end
 
 for k=1:n-1
@@ -142,7 +134,4 @@ for k=1:m-1
     P(:,k+1,2)=P1(:,k,2);
     P(:,k+1,3)=P1(:,k,3);
 end
-% [S]=Surfacepoint1(n,p,U,m,q,V,P)
-% figure
-% mesh(S(:,:,1),S(:,:,2),S(:,:,3))
 end
