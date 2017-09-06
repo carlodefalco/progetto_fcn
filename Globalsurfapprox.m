@@ -1,6 +1,6 @@
 function [U,V,P,N,NN]=Globalsurfapprox(r,s,q,p,Q,n,m)
 
-[ub,vb]=Surfmeshpar1(r,s,Q);
+[ub,vb]=Surfmeshpar(r,s,Q);
 %plot3(Q(:,:,1),Q(:,:,2),Q(:,:,3),'x')
 
 % Compute knots U by Eqs. (9.68),(9.69);
