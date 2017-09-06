@@ -16,11 +16,7 @@ p=3;
 q=3;
 
 [U,V,P]=Globalsurfapprox(r,s,p,q,Q,n,m)
-
-
-
 knots = {U V} ;
-% cntrl = zeros [3 , n , m];
 cntrl(1,:,:)=P(:,:,1);
 cntrl(2,:,:)=P(:,:,2);
 cntrl(3,:,:)=P(:,:,3);
