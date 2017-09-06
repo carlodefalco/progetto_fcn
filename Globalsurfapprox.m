@@ -1,4 +1,4 @@
-function [U,V,P,N,NN]=Globalsurfapprox(r,s,q,p,Q,n,m)
+function [U,V,P]=GlobSurfApprox(r,s,Q,p,q,n,m)
 
 [ub,vb]=Surfmeshpar(r,s,Q);
 
@@ -50,9 +50,7 @@ end
    end
       NTNu=Nu'*Nu;
 
-%LUDecomposition(NTNu,n-1,p);
-[L,UU,M]=lu(NTNu);
-Temp=zeros(n+1,s+1);
+      Temp=zeros(n+1,s+1);
 for j=0:s
     Temp(1,j+1,1)=Q(1,j+1,1);
     Temp(1,j+1,2)=Q(1,j+1,2);
@@ -65,28 +63,40 @@ for j=0:s
     %Compute and load Ru[] (Eqs.[9.63],[9.67]);
 
     for k=1:r-1
-        RRu(k,j+1,1)=Q(k+1,j+1,1)-N(k+1,1)*Q(1,j+1,1)-N(k+1,n+1)*Q(r+1,j+1,1);
-        RRu(k,j+1,2)=Q(k+1,j+1,2)-N(k+1,1)*Q(1,j+1,2)-N(k+1,n+1)*Q(r+1,j+1,2);
-        RRu(k,j+1,3)=Q(k+1,j+1,3)-N(k+1,1)*Q(1,j+1,3)-N(k+1,n+1)*Q(r+1,j+1,3);
+        RRu(k,:,1)=Q(k+1,j+1,1)-N(k+1,1)*Q(1,j+1,1)-N(k+1,n+1)*Q(r,j+1,1);
+        RRu(k,:,2)=Q(k+1,j+1,2)-N(k+1,1)*Q(1,j+1,2)-N(k+1,n+1)*Q(r,j+1,2);
+        RRu(k,:,3)=Q(k+1,j+1,3)-N(k+1,1)*Q(1,j+1,3)-N(k+1,n+1)*Q(r,j+1,3);
     end
+     
+%     %Here you get matrix as in Eq. 9.67
+    Ru(:,:,1)=Nu'*RRu(:,:,1);
+    Ru(:,:,2)=Nu'*RRu(:,:,2);
+    Ru(:,:,3)=Nu'*RRu(:,:,3);
     
-    %Here you get matrix as in Eq. 9.67
-    Ru(:,j+1,1)=Nu'*RRu(:,j+1,1);
-    Ru(:,j+1,2)=Nu'*RRu(:,j+1,2);
-    Ru(:,j+1,3)=Nu'*RRu(:,j+1,3);
+%     Temp1(:,j+1,1)=NTNu\Ru(:,:,1);
+%     Temp1(:,j+1,2)=NTNu\Ru(:,:,2);
+%     Temp1(:,j+1,3)=NTNu\Ru(:,:,3);
+     
+    [L1,U1]=lu(NTNu);
+    [L2,U2]=lu(NTNu);
+    [L3,U3]=lu(NTNu);
     
-    
-    Temp1(:,j+1,1)=NTNu\Ru(:,j+1,1);
-    Temp1(:,j+1,2)=NTNu\Ru(:,j+1,2);
-    Temp1(:,j+1,3)=NTNu\Ru(:,j+1,3);
-end
+    PP(:,j+1,1)=avanti(L1,Ru(:,:,1));
+    PP(:,j+1,2)=avanti(L2,Ru(:,:,2));
+    PP(:,j+1,3)=avanti(L3,Ru(:,:,3));
 
+    Temp1(:,j+1,1)=indietro(U1,PP(:,j+1,1));
+    Temp1(:,j+1,2)=indietro(U2,PP(:,j+1,2));
+    Temp1(:,j+1,3)=indietro(U3,PP(:,j+1,3));
+     
+ end
+ 
 for k=1:n-1
     Temp(k+1,:,1)=Temp1(k,:,1);
     Temp(k+1,:,2)=Temp1(k,:,2);
     Temp(k+1,:,3)=Temp1(k,:,3);
 end
-
+ 
 %Compute Nv[][] and NTNv[][] using Eq.(9.66);
 for i=0:s
        span=findspan(m,q,vb(i+1),V);
@@ -98,12 +108,8 @@ for i=0:s
    for jj=1:s-1
    Nv(jj,:)=NN(jj+1,2:m);
    end
-      NTNv=Nv'*Nv;
-      
-%LUDecomposition(NTNv,m-1,q);
-[L,UU,M]=lu(NTNv);
-
-for i=0:n
+       NTNv=Nv'*Nv;
+   for i=0:n
     % v direction fits
     P(i+1,1,1)=Temp(i+1,1,1);
     P(i+1,1,2)=Temp(i+1,1,2);
@@ -112,23 +118,21 @@ for i=0:n
     P(i+1,m+1,1)=Temp(i+1,s+1,1);
     P(i+1,m+1,2)=Temp(i+1,s+1,2);
     P(i+1,m+1,3)=Temp(i+1,s+1,3);
-    %Compute and load Rv[] (Eq.[9.63],[9.67]);
+%Compute and load Rv[] (Eq.[9.63],[9.67]);
     for k=1:s-1
-        RRv(i+1,k,1)=Q(i+1,k+1,1)-NN(k+1,1)*Q(i+1,1,1)-NN(k+1,m+1)*Q(i+1,s+1,1);
-        RRv(i+1,k,2)=Q(i+1,k+1,2)-NN(k+1,1)*Q(i+1,1,2)-NN(k+1,m+1)*Q(i+1,s+1,2);
-        RRv(i+1,k,3)=Q(i+1,k+1,3)-NN(k+1,1)*Q(i+1,1,3)-NN(k+1,m+1)*Q(i+1,s+1,3);
+        RRv(k,:,1)=Temp(i+1,k+1,1)-NN(k+1,1)*Temp(i+1,1,1)-NN(k+1,m+1)*Temp(i+1,s,1);
+        RRv(k,:,2)=Temp(i+1,k+1,2)-NN(k+1,1)*Temp(i+1,1,2)-NN(k+1,m+1)*Temp(i+1,s,2);
+        RRv(k,:,3)=Temp(i+1,k+1,3)-NN(k+1,1)*Temp(i+1,1,3)-NN(k+1,m+1)*Temp(i+1,s,3);
     end
-    
-    Rv(i+1,:,1)=Nv'*RRv(i+1,:,1)';
-    Rv(i+1,:,2)=Nv'*RRv(i+1,:,2)';
-    Rv(i+1,:,3)=Nv'*RRv(i+1,:,3)';
-    %Call FrowardBackward() to get the control points
      
-         P1(i+1,:,1)=NTNv'\Rv(i+1,:,1)';
-         P1(i+1,:,2)=NTNv'\Rv(i+1,:,2)';
-         P1(i+1,:,3)=NTNv'\Rv(i+1,:,3)';
-end
-
+    Rv(:,:,1)=Nv'*RRv(:,:,1);
+    Rv(:,:,2)=Nv'*RRv(:,:,2);
+    Rv(:,:,3)=Nv'*RRv(:,:,3);
+%Call FrowardBackward() to get the control points      
+         P1(i+1,:,1)=NTNv\Rv(:,:,1);
+         P1(i+1,:,2)=NTNv\Rv(:,:,2);
+         P1(i+1,:,3)=NTNv\Rv(:,:,3);
+   end
 for k=1:m-1
     P(:,k+1,1)=P1(:,k,1);
     P(:,k+1,2)=P1(:,k,2);
