@@ -1,10 +1,10 @@
-function [U, V, P, td] = LocalSurfInterp (n, m, Q)
+function [U, V, P] = LocalSurfInterp (n, m, Q)
 
 %%LocalSurfInterp
 %% Local Surface interpolation
 %% through (n+1)x(m+1) points
 %%
-%%  [U, V, P] = LocalSurfInterp_formaprof (n, m, Q)
+%%  [U, V, P] = LocalSurfInterp (n, m, Q)
 
 
 %% get ub, r and u direction tangents
