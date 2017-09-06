@@ -12,7 +12,7 @@ Q(:,:,3)=out{ii,1,3};
 n=n-1;
 m=m-1;
 
-[U,V,P,td]=LocalSurfInterp(n,m,Q);
+[U,V,P]=LocalSurfInterp(n,m,Q);
 
 knots = {U V} ;
 cntrl(1,:,:)=P(:,:,1);
