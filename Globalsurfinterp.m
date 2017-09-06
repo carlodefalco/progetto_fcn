@@ -2,7 +2,7 @@ function [U,V,P]=Globalsurfinterp(n,m,Q,p,q)
 x=Q(:,:,1);
 y=Q(:,:,2);
 z=Q(:,:,3);
-[uk,vl]=Surfmeshpar1(n,m,Q);
+[uk,vl]=Surfmeshpar(n,m,Q);
 %Compute "U" using eq 9.8
 nn=n+p+2;
 for j=1:n-p
