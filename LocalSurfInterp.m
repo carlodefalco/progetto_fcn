@@ -1,4 +1,4 @@
-function [U, V, P, td] = LocalSurfInterp_formaprof3 (n, m, Q)
+function [U, V, P, td] = LocalSurfInterp (n, m, Q)
 
 %%LocalSurfInterp
 %% Local Surface interpolation
