@@ -1,5 +1,6 @@
 function [Duvkl]=ComputeDuvkl(n,m,Q,r,s,td,delta_uk,delta_vl)
 %Calcolo Dukl
+
 for k=1:n+1
     for l=1:m+1
         D_u(k,l)=r(l)*td(k,l,1);
