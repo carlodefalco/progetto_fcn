@@ -1,10 +1,10 @@
-function [U, V, P] = LocalSurfInterp (n, m, Q)
+function [U, V, P, td] = LocalSurfInterp (n, m, Q)
 
 %%LocalSurfInterp
 %% Local Surface interpolation
 %% through (n+1)x(m+1) points
 %%
-%%  [U, V, P] = LocalSurfInterp (n, m, Q)
+%%  [U, V, P] = LocalSurfInterp_formaprof (n, m, Q)
 
 
 %% get ub, r and u direction tangents
@@ -67,7 +67,7 @@ vb(m+1) = 1;
 P = zeros(n+1,m+1,3);
 for k=0:n
     for l=0:m
-        P(3*l+1,3*k+1,:) = Q(l+1,k+1,:);
+        P(3*k+1,3*l+1,:) = Q(k+1,l+1,:);
     end
 end
 
@@ -123,7 +123,7 @@ P = DiscardInnerRowsandColumns (P);
             q(1,2,:) = 2 * q(1,3,:) - q(1,4,:);
             q(1,1,:) = 2 * q(1,2,:) - q(1,3,:);
         elseif ( l> m-2 )
-            q(1,1:2,:) = diff(Q(1,l-2:l,:),1,2);
+            q(1,1:2,:) = diff(Q(1,l-1:l+1,:),1,2);
             q(1,3,:) = 2 * q(1,2,:) - q(1,1,:);
             q(1,4,:) = 2 * q(1,3,:) - q(1,2,:);
         else
@@ -133,9 +133,9 @@ P = DiscardInnerRowsandColumns (P);
         c2 = cross(q(1,3,:),q(1,4,:));
         alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
             (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
-        alphak(isnan(alphak)) = 0;
+        alphak(isnan(alphak)) = 1 ;
         Vk = (1-alphak) .*q(1,2,:) + alphak .*q(1,3,:);
-        Tu0l = Vk / sqrt((Vk(:,:,1))^2 + (Vk(:,:,2))^2 + (Vk(:,:,3))^2);
+        Tu0l = Vk ./ sqrt((Vk(:,:,1))^2 + (Vk(:,:,2))^2 + (Vk(:,:,3))^2) ;
     end
 
 %% TODO: Compute and load T^u_{k,l} into td(k+1, l+1, 0+1)
@@ -145,7 +145,7 @@ P = DiscardInnerRowsandColumns (P);
             q(1,2,:) = 2 * q(1,3,:) - q(1,4,:);
             q(1,1,:) = 2 * q(1,2,:) - q(1,3,:);
         elseif ( l> m-2 )
-            q(1,1:2,:) = diff(Q(k+1,l-2:l,:),1,2);
+            q(1,1:2,:) = diff(Q(k+1,l-1:l+1,:),1,2);
             q(1,3,:) = 2 * q(1,2,:) - q(1,1,:);
             q(1,4,:) = 2 * q(1,3,:) - q(1,2,:);
         else
@@ -155,9 +155,9 @@ P = DiscardInnerRowsandColumns (P);
         c2 = cross(q(1,3,:),q(1,4,:));
         alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
             (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
-        alphak(isnan(alphak)) = 0;
+        alphak(isnan(alphak)) = 1 ;
         Vk = (1-alphak) .*q(1,2,:) + alphak .*q(1,3,:);
-        Tukl = Vk / sqrt((Vk(:,:,1))^2 + (Vk(:,:,2))^2 + (Vk(:,:,3))^2);
+        Tukl = Vk ./ sqrt((Vk(:,:,1))^2 + (Vk(:,:,2))^2 + (Vk(:,:,3))^2) ;
     end
 
 %% TODO: Compute and load T^v_{k,0} into td(k+1, 0+1, 1+1)
@@ -167,7 +167,7 @@ P = DiscardInnerRowsandColumns (P);
             q(2,1,:) = 2 * q(3,1,:) - q(4,1,:);
             q(1,1,:) = 2 * q(2,1,:) - q(3,1,:);
         elseif ( k > n-2 )
-            q(1:2,1,:) = diff(Q(k-2:k,1,:),1,1);
+            q(1:2,1,:) = diff(Q(k-1:k+1,1,:),1,1);
             q(3,1,:) = 2 * q(2,1,:) - q(1,1,:);
             q(4,1,:) = 2 * q(3,1,:) - q(2,1,:);
         else
@@ -177,9 +177,9 @@ P = DiscardInnerRowsandColumns (P);
         c2 = cross(q(3,1,:),q(4,1,:));
         alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
             (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
-        alphak(isnan(alphak)) = 0;
+        alphak(isnan(alphak)) = 1;
         Vv = (1-alphak) .*q(2,1,:) + alphak .*q(3,1,:);
-        Tvk0 = Vv / sqrt((Vv(:,:,1))^2 + (Vv(:,:,2))^2 + (Vv(:,:,3))^2);
+        Tvk0 = Vv ./ sqrt((Vv(:,:,1))^2 + (Vv(:,:,2))^2 + (Vv(:,:,3))^2) ;
     end
 
 %% TODO: Compute and load T^v_{k,l} into td(k+1, l+1, 1+1)
@@ -189,7 +189,7 @@ P = DiscardInnerRowsandColumns (P);
             q(2,1,:) = 2 * q(3,1,:) - q(4,1,:);
             q(1,1,:) = 2 * q(2,1,:) - q(3,1,:);
         elseif ( k > n-2 )
-            q(1:2,1,:) = diff(Q(k-2:k,l+1,:),1,1);
+            q(1:2,1,:) = diff(Q(k-1:k+1,l+1,:),1,1);
             q(3,1,:) = 2 * q(2,1,:) - q(1,1,:);
             q(4,1,:) = 2 * q(3,1,:) - q(2,1,:);
         else
@@ -199,9 +199,9 @@ P = DiscardInnerRowsandColumns (P);
         c2 = cross(q(3,1,:),q(4,1,:));
         alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
             (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
-        alphak(isnan(alphak)) = 0;
+        alphak(isnan(alphak)) = 1;
         Vv = (1-alphak) .*q(2,1,:) + alphak .*q(3,1,:);
-        Tvkl = Vv / sqrt((Vv(:,:,1))^2 + (Vv(:,:,2))^2 + (Vv(:,:,3))^2);
+        Tvkl = Vv ./ sqrt((Vv(:,:,1))^2 + (Vv(:,:,2))^2 + (Vv(:,:,3))^2) ;
     end
 
 
@@ -315,15 +315,15 @@ P = DiscardInnerRowsandColumns (P);
 
 %% TODO: Compute the four inner control points of the (k,l)th
 %% Bezier patch and load them into P
-    function P = ComputeInnerControlPoints (P)
-        gamma = (delta_uk(2:end)' * delta_vl(2:end))/9;
+function P = ComputeInnerControlPoints (P)
+        
         for k=0:n-1
             for l=0:m-1
-                
-                P(3*k+2,3*l+2,:) = gamma * td(k+1,l+1,:,3) + P(k+1,l+2,:) + P(k+2,l+1,:) - P(k+1,l+1,:);
-                P(3*k+3,3*l+2,:) = -gamma * td(k+2,l+1,:,3) + P(k+4,l+2,:) - P(k+4,l+1,:) + P(k+3,l+1,:);
-                P(3*k+2,3*l+3,:) = -gamma * td(k+1,l+2,:,3) + P(k+2,l+4,:) - P(k+1,l+4,:) + P(k+1,l+3,:);
-                P(3*k+3,3*l+3,:) = +gamma * td(k+2,l+2,:,3) + P(k+3,l+4,:) - P(k+4,l+3,:) + P(k+4,l+4,:);
+                gamma = (delta_uk(k+1) * delta_vl(l+1))/9;
+                P(3*k+2,3*l+2,:) = gamma * td(k+1,l+1,:,3) + P(3*k+1,3*l+2,:) + P(3*k+2,3*l+1,:) - P(3*k+1,3*l+1,:);
+                P(3*k+3,3*l+2,:) = -gamma * td(k+2,l+1,:,3) + P(3*k+4,3*l+2,:) - P(3*k+4,3*l+1,:) + P(3*k+3,3*l+1,:);
+                P(3*k+2,3*l+3,:) = -gamma * td(k+1,l+2,:,3) + P(3*k+2,3*l+4,:) - P(3*k+1,3*l+4,:) + P(3*k+1,3*l+3,:);
+                P(3*k+3,3*l+3,:) = +gamma * td(k+2,l+2,:,3) + P(3*k+3,3*l+4,:) + P(3*k+4,3*l+3,:) - P(3*k+4,3*l+4,:);
                 
             end
         end
