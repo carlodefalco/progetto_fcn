@@ -29,7 +29,7 @@ end
 
 for k=1:n-1
     ub(k+1) = ub(k) + ub(k+1) / total ;
-    ub(isnan(ub)) = 0;
+%     ub(isnan(ub)) = 0;
 end
 ub(n+1) = 1;
 
@@ -71,26 +71,26 @@ for k=0:n
     end
 end
 
-%Ciclo for per le colonne di Bezier control points
+%Ciclo for per le righe di Bezier control points
 for l=0:m
     for k=0:n-1
         delta_uk = diff(ub) ;
         a = r(l+1) * delta_uk(k+1)/3;
         a(isnan(a)) = 0 ;
         td(isnan(td)) = 0 ;
-        P(3*k+2,3*l+1,:) = Q(k+1,l+1,:)+a*td(k+1,l+1,:,1);
-        P(3*k+3,3*l+1,:) = Q(k+2,l+1,:)-a*td(k+2,l+1,:,1);
+        P(3*k+2,3*l+1,:) = Q(k+1,l+1,:)+a*td(k+1,l+1,:,2);
+        P(3*k+3,3*l+1,:) = Q(k+2,l+1,:)-a*td(k+2,l+1,:,2);
     end
 end
-%Ciclo for per le righe di Bezier control points
 
+%Ciclo for per le colonne di Bezier control points
 for k=0:n
     for l=0:m-1
         delta_vl = diff(vb) ;
-        b = s(k+1) * delta_vl(l+1)/3;
+        b = s(k+1) * (vb(l+2)-vb(l+1))/3;
         b(isnan(b)) = 0 ;
-        P(3*k+1,3*l+2,:) = Q(k+1,l+1,:)+b*td(k+1,l+1,:,2);
-        P(3*k+1,3*l+3,:) = Q(k+1,l+2,:)-b*td(k+1,l+2,:,2);
+        P(3*k+1,3*l+2,:) = Q(k+1,l+1,:)+b*td(k+1,l+1,:,1);
+        P(3*k+1,3*l+3,:) = Q(k+1,l+2,:)-b*td(k+1,l+2,:,1);
     end
 end
 
@@ -133,7 +133,7 @@ P = DiscardInnerRowsandColumns (P);
         c2 = cross(q(1,3,:),q(1,4,:));
         alphak = sqrt(c1(1,1,1)^2 + c1(1,1,2)^2 + c1(1,1,3)^2)/...
             (sqrt(c1(1,1,1)^2+c1(1,1,2)^2+c1(1,1,3)^2) + sqrt(c2(1,1,1)^2 + c2(1,1,2)^2 + c2(1,1,3)^2) );
-        alphak(isnan(alphak)) = 1 ;
+        alphak(isnan(alphak)) = 1;
         Vk = (1-alphak) .*q(1,2,:) + alphak .*q(1,3,:);
         Tu0l = Vk ./ sqrt((Vk(:,:,1))^2 + (Vk(:,:,2))^2 + (Vk(:,:,3))^2) ;
     end
@@ -247,7 +247,7 @@ P = DiscardInnerRowsandColumns (P);
     function Duvkl = ComputeDuvkl (k, l)
 
         if (l == 0)
-            D_u(1,1:3,:) = r(l+1) .* td(k+1,1:3,:,1) ;
+            D_u(1,1:3,:) = r(l+1) * td(k+1,1:3,:,2) ;
             Dvl = diff(vb(1:3));
             bl = Dvl(1) / (Dvl(1) + Dvl(2));
             Delta_D_u = diff(D_u(1,1:3,:),1,2);
@@ -256,7 +256,7 @@ P = DiscardInnerRowsandColumns (P);
             c3 = 2;
             c4 = -1;
         elseif (l == m)
-            D_u(1,1:3,:) = r(l+1) .* td(k+1,m-1:m+1,:,1) ;
+            D_u(1,1:3,:) = r(l+1) * td(k+1,m-1:m+1,:,2) ;
             Dvl = diff(vb(m-1:m+1));
             bl = Dvl(1) / (Dvl(1) + Dvl(2));
             Delta_D_u = diff(D_u(1,1:3,:),1,2);
@@ -265,7 +265,7 @@ P = DiscardInnerRowsandColumns (P);
             c3 = -1;
             c4 = 2;
         else
-            D_u(1,1:3,:) = r(l+1) .* td(k+1,l:l+2,:,1) ;
+            D_u(1,1:3,:) = r(l+1) * td(k+1,l:l+2,:,2) ;
             Dvl = diff(vb(l:l+2));
             bl = Dvl(1) / (Dvl(1) + Dvl(2));
             Delta_D_u = diff(D_u(1,1:3,:),1,2);
@@ -274,7 +274,7 @@ P = DiscardInnerRowsandColumns (P);
             c4 = bl;
         end
         if (k == 0)
-            D_v(1:3,1,:) = s(k+1) .* td(1:3,l+1,:,2) ;
+            D_v(1:3,1,:) = s(k+1) * td(1:3,l+1,:,1) ;
             Duk = diff (ub(1:3));
             ak  = Duk(1) / (Duk(1) + Duk(2));
             Delta_Dv = diff(D_v(1:3,1,:),1,1) ;
@@ -284,7 +284,7 @@ P = DiscardInnerRowsandColumns (P);
             c2  = -1;
             
         elseif (k == n)
-            D_v(1:3,1,:) = s(k+1) .* td(n-1:n+1,l+1,:,2) ;
+            D_v(1:3,1,:) = s(k+1) * td(n-1:n+1,l+1,:,1) ;
             Duk = diff (ub(n-1:n+1));
             ak  = Duk(1) / (Duk(1) + Duk(2));
             Delta_Dv = diff(D_v(1:3,1,:),1,1) ;
@@ -296,7 +296,7 @@ P = DiscardInnerRowsandColumns (P);
             
             
         else
-            D_v(1:3,1,:) = s(k+1) .* td(k:k+2,l+1,:,2) ;
+            D_v(1:3,1,:) = s(k+1) * td(k:k+2,l+1,:,1) ;
             Duk = diff (ub(k:k+2));
             ak  = Duk(1) / (Duk(1) + Duk(2));
             Delta_Dv = diff(D_v(1:3,1,:),1,1);
@@ -319,7 +319,7 @@ function P = ComputeInnerControlPoints (P)
         
         for k=0:n-1
             for l=0:m-1
-                gamma = (delta_uk(k+1) * delta_vl(l+1))/9;
+                gamma = delta_uk(k+1) * delta_vl(l+1)/9;
                 P(3*k+2,3*l+2,:) = gamma * td(k+1,l+1,:,3) + P(3*k+1,3*l+2,:) + P(3*k+2,3*l+1,:) - P(3*k+1,3*l+1,:);
                 P(3*k+3,3*l+2,:) = -gamma * td(k+2,l+1,:,3) + P(3*k+4,3*l+2,:) - P(3*k+4,3*l+1,:) + P(3*k+3,3*l+1,:);
                 P(3*k+2,3*l+3,:) = -gamma * td(k+1,l+2,:,3) + P(3*k+2,3*l+4,:) - P(3*k+1,3*l+4,:) + P(3*k+1,3*l+3,:);
