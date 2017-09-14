@@ -4,7 +4,7 @@ close all
 
 out = A93_94_95_test_data (5, 6, 17, 25);
 %Put ii=1 per prima figura,ii=2 per seconda
-ii = 3;
+ii = 1;
 Q(:,:,1)=out{ii,1,1};
 Q(:,:,2)=out{ii,1,2};
 Q(:,:,3)=out{ii,1,3};
