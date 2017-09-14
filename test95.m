@@ -29,7 +29,7 @@ mesh (P(:, :, 1), P(:, :, 2), P(:, :, 3), 'marker', 'o', 'edgecolor', 'k')
 hold off
 
 figure
-for ii = 1 : numel (P (1, :, 1));
+for ii = 1 : numel (P (:, 1, 1));
   plot3 (P (ii, :, 1), P (ii, :, 2), P (ii, :, 3), 'k')
   hold on
 end
