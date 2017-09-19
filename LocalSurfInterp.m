@@ -76,8 +76,8 @@ function [U, V, P, td] = LocalSurfInterp (n, m, Q)
       a = r(l+1) * delta_uk(k+1)/3;
       a(isnan(a)) = 0 ;
       td(isnan(td)) = 0 ;
-      P(3*k+2,3*l+1,:) = Q(k+1,l+1,:)+a*td(k+1,l+1,:,2);
-      P(3*k+3,3*l+1,:) = Q(k+2,l+1,:)-a*td(k+2,l+1,:,2);
+      P(3*k+2,3*l+1,:) = Q(k+1,l+1,:)+a*td(k+1,l+1,:,1);
+      P(3*k+3,3*l+1,:) = Q(k+2,l+1,:)-a*td(k+2,l+1,:,1);
     end
   end
 
@@ -87,8 +87,8 @@ function [U, V, P, td] = LocalSurfInterp (n, m, Q)
       delta_vl = diff(vb) ;
       b = s(k+1) * (vb(l+2)-vb(l+1))/3;
       b(isnan(b)) = 0 ;
-      P(3*k+1,3*l+2,:) = Q(k+1,l+1,:) + b*td(k+1,l+1,:,1);
-      P(3*k+1,3*l+3,:) = Q(k+1,l+2,:) - b*td(k+1,l+2,:,1);
+      P(3*k+1,3*l+2,:) = Q(k+1,l+1,:) + b*td(k+1,l+1,:,2);
+      P(3*k+1,3*l+3,:) = Q(k+1,l+2,:) - b*td(k+1,l+2,:,2);
     end
   end
 
@@ -112,41 +112,33 @@ function [U, V, P, td] = LocalSurfInterp (n, m, Q)
 %%%%%%%%%%%%%%%%%%%%%%%%%% HELPER FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %% TODO: Compute and load T^u_{0,l} into td(0+1, l+1, 0+1)
-  function Tu0l = ComputeTu0l (l)
-    if ( l < 2 )
-      q(3:4,:) = diff (squeeze (Q(1,l+1:l+3,:)),1,1);
-      q(2,:) = 2 * q(3,:) - q(4,:);
-      q(1,:) = 2 * q(2,:) - q(3,:);
-    elseif ( l> m-2 )
-      q(1:2,:) = diff (squeeze (Q(1,l-1:l+1,:)),1,1);
-      q(3,:) = 2 * q(2,:) - q(1,:);
-      q(4,:) = 2 * q(3,:) - q(2,:);
-    else
-      q = diff (squeeze (Q(1,l-1:l+3,:)),1,1);
+    function Tu0l = ComputeTu0l (l)
+        
+        q(3:4,:) = diff (squeeze (Q(1:3,l+1,:)),1,1);
+        q(2,:) = 2 * q(3,:) - q(4,:);
+        q(1,:) = 2 * q(2,:) - q(3,:);
+        
+        c1 = cross(q(1,:),q(2,:));
+        c2 = cross(q(3,:),q(4,:));
+        
+        alphak = norm (c1) / (norm (c1) + norm (c2));
+        alphak(isnan(alphak)) = 1;
+        Vk = (1-alphak) .* q(2,:) + alphak .* q(3,:);
+        Tu0l = Vk / norm (Vk);
     end
-    
-    c1 = cross(q(1,:),q(2,:));
-    c2 = cross(q(3,:),q(4,:));
-
-    alphak = norm (c1) / (norm (c1) + norm (c2));
-    alphak(isnan(alphak)) = 1;
-    Vk = (1-alphak) .* q(2,:) + alphak .* q(3,:);
-
-    Tu0l = Vk / norm (Vk);
-  end
 
   %% TODO: Compute and load T^u_{k,l} into td(k+1, l+1, 0+1)
   function Tukl = ComputeTukl (k, l)
-    if ( l < 2 )
-      q(3:4,:) = diff (squeeze (Q(k+1,l+1:l+3,:)), 1, 1);
+    if ( k < 2 )
+      q(3:4,:) = diff (squeeze (Q(k+1:k+3,l+1,:)), 1, 1);
       q(2,:) = 2 * q(3,:) - q(4,:);
       q(1,:) = 2 * q(2,:) - q(3,:);
-    elseif ( l> m-2 )
-      q(1:2,:) = diff (squeeze (Q(k+1,l-1:l+1,:)), 1, 1);
+    elseif ( k> n-2 )
+      q(1:2,:) = diff (squeeze (Q(k-1:k+1,l+1,:)), 1, 1);
       q(3,:) = 2 * q(2,:) - q(1,:);
       q(4,:) = 2 * q(3,:) - q(2,:);
     else
-      q = diff (squeeze (Q(k+1,l-1:l+3,:)), 1, 1);
+      q = diff (squeeze (Q(k-1:k+3,l+1,:)), 1, 1);
     end
     
     c1 = cross(q(1,:),q(2,:));
@@ -161,17 +153,9 @@ function [U, V, P, td] = LocalSurfInterp (n, m, Q)
 
   %% TODO: Compute and load T^v_{k,0} into td(k+1, 0+1, 1+1)
   function Tvk0 = ComputeTvk0 (k)
-    if ( k < 2 )
-      q(3:4,:) = diff (squeeze (Q(k+1:k+3,1,:)), 1, 1);
+      q(3:4,:) = diff (squeeze (Q(k+1,1:3,:)), 1, 1);
       q(2,:) = 2 * q(3,:) - q(4,:);
       q(1,:) = 2 * q(2,:) - q(3,:);
-    elseif ( k > n-2 )
-      q(1:2,:) = diff (squeeze (Q(k-1:k+1,1,:)), 1, 1);
-      q(3,:) = 2 * q(2,:) - q(1,:);
-      q(4,:) = 2 * q(3,:) - q(2,:);
-    else
-      q = diff (squeeze (Q(k-1:k+3,1,:)), 1, 1);
-    end
     c1 = cross (q(1,:), q(2,:));
     c2 = cross (q(3,:), q(4,:));
     
@@ -183,16 +167,16 @@ function [U, V, P, td] = LocalSurfInterp (n, m, Q)
 
   %% TODO: Compute and load T^v_{k,l} into td(k+1, l+1, 1+1)
   function Tvkl = ComputeTvkl (k, l)
-    if ( k < 2 )
-      q(3:4,:) = diff( squeeze (Q(k+1:k+3,l+1,:)), 1, 1);
+    if ( l < 2 )
+      q(3:4,:) = diff( squeeze (Q(k+1,l+1:l+3,:)), 1, 1);
       q(2,:) = 2 * q(3,:) - q(4,:);
       q(1,:) = 2 * q(2,:) - q(3,:);
-    elseif ( k > n-2 )
-      q(1:2,:) = diff (squeeze (Q(k-1:k+1,l+1,:)), 1, 1);
+    elseif ( l > m-2 )
+      q(1:2,:) = diff (squeeze (Q(k+1,l-1:l+1,:)), 1, 1);
       q(3,:) = 2 * q(2,:) - q(1,:);
       q(4,:) = 2 * q(3,:) - q(2,:);
     else
-      q = diff (squeeze (Q(k-1:k+3,l+1,:)), 1, 1);
+      q = diff (squeeze (Q(k+1,l-1:l+3,:)), 1, 1);
     end
     c1 = cross (q(1,:), q(2,:));
     c2 = cross (q(3,:), q(4,:));
@@ -246,85 +230,79 @@ function [U, V, P, td] = LocalSurfInterp (n, m, Q)
   function Duvkl = ComputeDuvkl (k, l)
 
     if (l == 0)
-      D_u(1,1:3,:) = r(l+1) * td(k+1,1:3,:,2) ;
+      D_u = r(l+1) * squeeze(td(k+1,1:3,:,1)) ;
       Dvl = diff(vb(1:3));
       bl = Dvl(1) / (Dvl(1) + Dvl(2));
-      Delta_D_u = diff(D_u(1,1:3,:),1,2);
-      dl = Delta_D_u ./Dvl';
-      dl(:,2) = (1-bl) * dl(:,1) + bl * dl(:,2);
-      c3 = 2;
-      c4 = -1;
+      Delta_D_u = diff(D_u,1,1);
+      dl(1,:) = (D_u(2,:)-D_u(1,:))/ Dvl(1) ;
+      dl(2,:) = (1-bl) * Delta_D_u(1,:)/Dvl(1) + bl * Delta_D_u(2,:)/Dvl(2);
+      d_uv = 2 * dl(1,:) - dl(2,:) ;
     elseif (l == m)
-      D_u(1,1:3,:) = r(l+1) * td(k+1,m-1:m+1,:,2) ;
+      D_u = r(l+1) * squeeze(td(k+1,m-1:m+1,:,1)) ;
       Dvl = diff(vb(m-1:m+1));
       bl = Dvl(1) / (Dvl(1) + Dvl(2));
-      Delta_D_u = diff(D_u(1,1:3,:),1,2);
-      dl = Delta_D_u ./Dvl';
-      dl(:,2) = (1-bl) * dl(:,1) + bl * dl(:,2);
-      c3 = -1;
-      c4 = 2;
+      Delta_D_u = diff(D_u,1,1);
+      dl(1,:) = (D_u(2,:)-D_u(1,:))/ Dvl(2) ;
+      dl(2,:) = (1-bl) * Delta_D_u(1,:)/Dvl(1) + bl * Delta_D_u(2,:)./Dvl(2);
+      d_uv = 2 * dl(1,:) - dl(2,:) ;
     else
-      D_u(1,1:3,:) = r(l+1) * td(k+1,l:l+2,:,2) ;
+      D_u = r(l+1) * squeeze(td(k+1,l:l+2,:,1)) ;
       Dvl = diff(vb(l:l+2));
       bl = Dvl(1) / (Dvl(1) + Dvl(2));
-      Delta_D_u = diff(D_u(1,1:3,:),1,2);
-      dl = Delta_D_u./Dvl';
-      c3 = ( 1-bl);
-      c4 = bl;
+      Delta_D_u = diff(D_u,1,1);
+      dl(1,:) = Delta_D_u(1,:)/Dvl(1);
+      dl(2,:) = Delta_D_u(2,:)/Dvl(2);
+      d_uv = (1- bl) * dl(1,:) + bl * dl(2,:);
     end
+
     
     if (k == 0)
-      D_v(1:3,1,:) = s(k+1) * td(1:3,l+1,:,1) ;
+      D_v = s(k+1) * squeeze(td(1:3,l+1,:,2)) ;
       Duk = diff (ub(1:3));
       ak  = Duk(1) / (Duk(1) + Duk(2));
-      Delta_Dv = diff(D_v(1:3,1,:),1,1) ;
-      dk  = Delta_Dv ./ Duk;
-      dk(2,:)  = (1 - ak) * dk(1,:) + ak * dk(2,:);
-      c1  =  2;
-      c2  = -1;
+      Delta_Dv = diff(D_v,1,1) ;
+      dk(1,:)  = (D_v(2,:)-D_v(1,:))/Duk(1) ;
+      dk(2,:)  = (1 - ak) * Delta_Dv(1,:)/Duk(1) + ak * Delta_Dv(1,:)/Duk(2) ;
+      d_vu = 2 * dk(1,:) - dk(2,:) ;
     elseif (k == n)
-      D_v(1:3,1,:) = s(k+1) * td(n-1:n+1,l+1,:,1) ;
+      D_v = s(k+1) * squeeze(td(n-1:n+1,l+1,:,2)) ;
       Duk = diff (ub(n-1:n+1));
       ak  = Duk(1) / (Duk(1) + Duk(2));
-      Delta_Dv = diff(D_v(1:3,1,:),1,1) ;
-      dk  = Delta_Dv ./ Duk;
-      dk(2,:)  = (1 - ak) * dk(1,:) + ak * dk(2,:);
-      c1  = -1;
-      c2  =  2;
+      Delta_Dv = diff(D_v,1,1) ;
+      dk(2,:)  = (D_v(2,:)-D_v(1,:)) /Duk(1);
+      dk(1,:)  = (1 - ak) * Delta_Dv(1,:)/Duk(1) + ak * Delta_Dv(1,:)/Duk(2);
+      d_vu = 2 * dk(2,:) - dk(1,:) ;
     else
-      D_v(1:3,1,:) = s(k+1) * td(k:k+2,l+1,:,1) ;
+      D_v = s(k+1) * squeeze(td(k:k+2,l+1,:,2)) ;
       Duk = diff (ub(k:k+2));
       ak  = Duk(1) / (Duk(1) + Duk(2));
-      Delta_Dv = diff(D_v(1:3,1,:),1,1);
-      dk  = Delta_Dv ./ Duk;
-      c1  = (1 - ak);
-      c2  = ak;
+      Delta_Dv = diff(D_v,1,1);
+      dk(1,:)  = Delta_Dv(1,:) / Duk(1);
+      dk(2,:)  = Delta_Dv(2,:) / Duk(2);
+      d_vu = (1-ak) * dk(1,:) + ak * dk(2,:);      
     end
+
     
-    
-    d_vu = c1 * dk(1,:,:) + c2 * dk(2,:,:);
-    d_uv = c3 * dl(:,1,:) + c4 * dl(:,2,:) ;
-    Duvkl = (c2 * d_uv + c4 * d_vu) / (c2 + c4);
+    Duvkl = (ak * d_uv + bl * d_vu) / (ak + bl);
 
   end
-
   %% TODO: Compute the four inner control points of the (k,l)th
   %% Bezier patch and load them into P
-  function P = ComputeInnerControlPoints (P)
-    
-    for k=0:n-1
-      for l=0:m-1
+    function P = ComputeInnerControlPoints (P)
         
-        gamma = delta_uk(k+1) * delta_vl(l+1)/9;
-        
-        P(3*k+2, 3*l+2, :) =  gamma * td(k+1,l+1,:,3) + P(3*k+1,3*l+2,:) + P(3*k+2,3*l+1,:) - P(3*k+1,3*l+1,:);
-        P(3*k+3, 3*l+2, :) = -gamma * td(k+2,l+1,:,3) + P(3*k+4,3*l+2,:) - P(3*k+4,3*l+1,:) + P(3*k+3,3*l+1,:);
-        P(3*k+2, 3*l+3, :) = -gamma * td(k+1,l+2,:,3) + P(3*k+2,3*l+4,:) - P(3*k+1,3*l+4,:) + P(3*k+1,3*l+3,:);
-        P(3*k+3, 3*l+3, :) = +gamma * td(k+2,l+2,:,3) + P(3*k+3,3*l+4,:) + P(3*k+4,3*l+3,:) - P(3*k+4,3*l+4,:);
-        
-      end
+        for k=0:n-1
+            for l=0:m-1
+                
+                gamma = delta_uk(k+1) * delta_vl(l+1)/9;
+                
+                P(3*k+2, 3*l+2, :) =  gamma * td(k+1,l+1,:,3) + P(3*k+1,3*l+2,:) + P(3*k+2,3*l+1,:) - P(3*k+1,3*l+1,:);
+                P(3*k+3, 3*l+2, :) = -gamma * td(k+2,l+1,:,3) + P(3*k+4,3*l+2,:) - P(3*k+4,3*l+1,:) + P(3*k+3,3*l+1,:);
+                P(3*k+2, 3*l+3, :) = -gamma * td(k+1,l+2,:,3) + P(3*k+2,3*l+4,:) - P(3*k+1,3*l+4,:) + P(3*k+1,3*l+3,:);
+                P(3*k+3, 3*l+3, :) = +gamma * td(k+2,l+2,:,3) + P(3*k+3,3*l+4,:) + P(3*k+4,3*l+3,:) - P(3*k+4,3*l+4,:);
+                
+            end
+        end
     end
-  end
 
   %% TODO: Load the NURBS control points by discarding Bezier points
   %% along inner rows and columns, Figure 9.32c
